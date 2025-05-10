@@ -1,4 +1,5 @@
-import { numberToColor } from './util';
+import { numberToColor } from "../../logic/util";
+
 
 export type Position = [number, number];
 interface BlockProps {

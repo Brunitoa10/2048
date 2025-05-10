@@ -77,3 +77,34 @@ body {
 .blockShoot>div {
   flex-grow: 1;
 }
+
+.score-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: linear-gradient(145deg, #2e2e2e, #1c1c1c);
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 1.2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border: 1px solid #444;
+  transition: transform 0.2s ease;
+}
+
+.score-box:hover {
+  transform: scale(1.05);
+}
+
+.score-label {
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #facc15; /* amarillo dorado */
+}
+
+.score-value {
+  font-weight: bold;
+  font-size: 1.3rem;
+  color: #22c55e; /* verde neón */
+}
