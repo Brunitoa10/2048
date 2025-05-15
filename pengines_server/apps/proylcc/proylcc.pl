@@ -13,7 +13,7 @@
  */
 shoot(Block, Column, Grid, NumCols, [effect(UpdatedGrid, [])]) :-
     find_empty_row(Grid, Column, NumCols, RowIndex),
-    valid_shot_position(Grid, RowIndex, Column, Block, NumCols),
+   /* valid_shot_position(Grid, RowIndex, Column, Block, NumCols),*/
     insert_block_with_merge(Grid, RowIndex, Column, Block, NumCols, UpdatedGrid).
 
 /**
