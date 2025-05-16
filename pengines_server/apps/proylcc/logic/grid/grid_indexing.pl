@@ -1,8 +1,8 @@
 :- module(grid_indexing,
     [
         index/4,         % index(+Row, +Col, +NumCols, -Index)
-        get_cell/4,      % get_cell(+Grid, +Row, +Col, +NumCols, -Value)
-        set_cell/5       % set_cell(+Grid, +Row, +Col, +NumCols, +Value, -NewGrid)
+        get_cell/5,      % get_cell(+Grid, +Row, +Col, +NumCols, -Value)
+        set_cell/6       % set_cell(+Grid, +Row, +Col, +NumCols, +Value, -NewGrid)
     ]).
 
 index(Row, Col, NumCols, Index) :-

@@ -4,7 +4,7 @@
         shoot/5    
     ]).
 
-:- use_module(logic/grid_utils).
+:- use_module(logic/grid/grid_utils).
 :- use_module(logic/block_factory, [random_block/2]).
 
 /**
