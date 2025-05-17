@@ -1,3 +1,4 @@
+
 :- module(grid_utils,
     [
         find_empty_row/4,
@@ -27,4 +28,4 @@ insert_block(Grid, Row, Col, Block, NumCols, NewGrid) :-
 
 insert_block_with_merge(Grid, Row, Col, Block, NumCols, FinalGrid) :-
     insert_block(Grid, Row, Col, Block, NumCols, TempGrid),
-    grid_merge:maybe_merge_recursive(TempGrid, Row, Col, NumCols, FinalGrid).
+    grid_merge:merge_all_possible(TempGrid, NumCols, FinalGrid).

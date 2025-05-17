@@ -1,64 +1,111 @@
 :- module(grid_merge,
     [
-        maybe_merge_recursive/5
+        merge_all_possible/3
     ]).
 
 :- use_module(grid_indexing).
 
-maybe_merge_recursive(Grid, Row, Col, NumCols, FinalGrid) :-
-    (   can_merge(Grid, Row, Col, NumCols)
-    ->  perform_merge(Grid, Row, Col, NumCols, NewGrid, NewRow, NewCol),
-        maybe_merge_recursive(NewGrid, NewRow, NewCol, NumCols, FinalGrid)
-    ;   FinalGrid = Grid
+merge_all_possible(Grid, NumCols, FinalGrid) :-
+    find_and_merge_any(Grid, NumCols, TempGrid),
+    (Grid \= TempGrid 
+    -> merge_all_possible(TempGrid, NumCols, FinalGrid)
+    ;  FinalGrid = Grid).
+
+find_and_merge_any(Grid, NumCols, ResultGrid) :-
+    (find_and_merge_trio(Grid, NumCols, TempGrid)
+    -> ResultGrid = TempGrid
+    ; find_and_merge_pair(Grid, NumCols, ResultGrid)
     ).
 
-can_merge(Grid, Row, Col, NumCols) :-
-    grid_indexing:get_cell(Grid, Row, Col, NumCols, Block),
-    Block \= '-',
-    (
-        Row > 1,
-        R1 is Row - 1,
-        grid_indexing:get_cell(Grid, R1, Col, NumCols, B1),
-        Block == B1
-    ;
-        Col > 1,
-        C1 is Col - 1,
-        grid_indexing:get_cell(Grid, Row, C1, NumCols, B2),
-        Block == B2
-    ;
-        Col < NumCols,
-        C2 is Col + 1,
-        grid_indexing:get_cell(Grid, Row, C2, NumCols, B3),
-        Block == B3
-    ).
+find_and_merge_trio(Grid, NumCols, ResultGrid) :-
+    length(Grid, Len),
+    NumRows is Len // NumCols,
+    find_trio_in_row(Grid, NumRows, NumCols, Row, Col, Value),
+    !,
+    merge_trio_in_row(Grid, Row, Col, Value, NumCols, ResultGrid).
+find_and_merge_trio(Grid, NumCols, ResultGrid) :-
+    length(Grid, Len),
+    NumRows is Len // NumCols,
+    find_trio_in_col(Grid, NumRows, NumCols, Row, Col, Value),
+    !,
+    merge_trio_in_col(Grid, Row, Col, Value, NumCols, ResultGrid).
 
-perform_merge(Grid, Row, Col, NumCols, NewGrid, NewRow, NewCol) :-
-    grid_indexing:get_cell(Grid, Row, Col, NumCols, Block),
-    (
-        Row > 1,
-        R1 is Row - 1,
-        grid_indexing:get_cell(Grid, R1, Col, NumCols, B1),
-        Block == B1,
-        Sum is Block + B1,
-        grid_indexing:set_cell(Grid, R1, Col, NumCols, Sum, G1),
-        grid_indexing:set_cell(G1, Row, Col, NumCols, '-', NewGrid),
-        NewRow = R1, NewCol = Col
-    ;
-        Col > 1,
-        C1 is Col - 1,
-        grid_indexing:get_cell(Grid, Row, C1, NumCols, B2),
-        Block == B2,
-        Sum is Block + B2,
-        grid_indexing:set_cell(Grid, Row, C1, NumCols, Sum, G1),
-        grid_indexing:set_cell(G1, Row, Col, NumCols, '-', NewGrid),
-        NewRow = Row, NewCol = C1
-    ;
-        Col < NumCols,
-        C2 is Col + 1,
-        grid_indexing:get_cell(Grid, Row, C2, NumCols, B3),
-        Block == B3,
-        Sum is Block + B3,
-        grid_indexing:set_cell(Grid, Row, C2, NumCols, Sum, G1),
-        grid_indexing:set_cell(G1, Row, Col, NumCols, '-', NewGrid),
-        NewRow = Row, NewCol = C2
-    ).
+find_and_merge_pair(Grid, NumCols, ResultGrid) :-
+    length(Grid, Len),
+    NumRows is Len // NumCols,
+    find_pair_in_row(Grid, NumRows, NumCols, Row, Col, Value),
+    !,
+    merge_pair_horizontal(Grid, Row, Col, Value, NumCols, ResultGrid).
+find_and_merge_pair(Grid, NumCols, ResultGrid) :-
+    length(Grid, Len),
+    NumRows is Len // NumCols,
+    find_pair_in_col(Grid, NumRows, NumCols, Row, Col, Value),
+    !,
+    merge_pair_vertical(Grid, Row, Col, Value, NumCols, ResultGrid).
+find_and_merge_pair(Grid, _, Grid).
+
+find_trio_in_row(Grid, NumRows, NumCols, Row, StartCol, Value) :-
+    between(1, NumRows, Row),
+    between(1, NumCols, StartCol),
+    StartCol =< NumCols - 2, 
+    grid_indexing:get_cell(Grid, Row, StartCol, NumCols, Value),
+    Value \= '-',
+    MiddleCol is StartCol + 1,
+    EndCol is StartCol + 2,
+    grid_indexing:get_cell(Grid, Row, MiddleCol, NumCols, Value),
+    grid_indexing:get_cell(Grid, Row, EndCol, NumCols, Value).
+
+find_trio_in_col(Grid, NumRows, NumCols, StartRow, Col, Value) :-
+    between(1, NumCols, Col),
+    between(1, NumRows, StartRow),
+    StartRow =< NumRows - 2,  
+    grid_indexing:get_cell(Grid, StartRow, Col, NumCols, Value),
+    Value \= '-',
+    MiddleRow is StartRow + 1,
+    EndRow is StartRow + 2,
+    grid_indexing:get_cell(Grid, MiddleRow, Col, NumCols, Value),
+    grid_indexing:get_cell(Grid, EndRow, Col, NumCols, Value).
+
+find_pair_in_row(Grid, NumRows, NumCols, Row, Col, Value) :-
+    between(1, NumRows, Row),
+    between(1, NumCols, Col),
+    Col < NumCols,
+    NextCol is Col + 1,
+    grid_indexing:get_cell(Grid, Row, Col, NumCols, Value),
+    Value \= '-',
+    grid_indexing:get_cell(Grid, Row, NextCol, NumCols, Value).
+
+find_pair_in_col(Grid, NumRows, NumCols, Row, Col, Value) :-
+    between(1, NumCols, Col),
+    between(1, NumRows, Row),
+    Row < NumRows,
+    NextRow is Row + 1,
+    grid_indexing:get_cell(Grid, Row, Col, NumCols, Value),
+    Value \= '-',
+    grid_indexing:get_cell(Grid, NextRow, Col, NumCols, Value).
+
+merge_trio_in_row(Grid, Row, StartCol, Value, NumCols, ResultGrid) :-
+    MergeValue is Value * 4,
+    MiddleCol is StartCol + 1,
+    grid_indexing:set_cell(Grid, Row, StartCol, NumCols, '-', TempGrid1),
+    grid_indexing:set_cell(TempGrid1, Row, StartCol+2, NumCols, '-', TempGrid2),
+    grid_indexing:set_cell(TempGrid2, Row, MiddleCol, NumCols, MergeValue, ResultGrid).
+
+merge_trio_in_col(Grid, StartRow, Col, Value, NumCols, ResultGrid) :-
+    MergeValue is Value * 4,
+    MiddleRow is StartRow + 1,
+    grid_indexing:set_cell(Grid, StartRow, Col, NumCols, '-', TempGrid1),
+    grid_indexing:set_cell(TempGrid1, StartRow+2, Col, NumCols, '-', TempGrid2),
+    grid_indexing:set_cell(TempGrid2, MiddleRow, Col, NumCols, MergeValue, ResultGrid).
+
+merge_pair_horizontal(Grid, Row, Col, Value, NumCols, ResultGrid) :-
+    NextCol is Col + 1,
+    Sum is Value + Value,
+    grid_indexing:set_cell(Grid, Row, Col, NumCols, Sum, TempGrid),
+    grid_indexing:set_cell(TempGrid, Row, NextCol, NumCols, '-', ResultGrid).
+
+merge_pair_vertical(Grid, Row, Col, Value, NumCols, ResultGrid) :-
+    NextRow is Row + 1,
+    Sum is Value + Value,
+    grid_indexing:set_cell(Grid, Row, Col, NumCols, Sum, TempGrid),
+    grid_indexing:set_cell(TempGrid, NextRow, Col, NumCols, '-', ResultGrid).
