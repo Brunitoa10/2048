@@ -12,37 +12,122 @@ merge_all_possible(Grid, NumCols, FinalGrid) :-
     ;  FinalGrid = Grid).
 
 find_and_merge_any(Grid, NumCols, ResultGrid) :-
-    (find_and_merge_trio(Grid, NumCols, TempGrid)
+    (find_and_merge_quad(Grid, NumCols, TempGrid)
+    -> ResultGrid = TempGrid
+    ; find_and_merge_trio(Grid, NumCols, TempGrid)
     -> ResultGrid = TempGrid
     ; find_and_merge_pair(Grid, NumCols, ResultGrid)
     ).
 
+% Definiciones de los predicados faltantes
 find_and_merge_trio(Grid, NumCols, ResultGrid) :-
     length(Grid, Len),
     NumRows is Len // NumCols,
-    find_trio_in_row(Grid, NumRows, NumCols, Row, Col, Value),
-    !,
-    merge_trio_in_row(Grid, Row, Col, Value, NumCols, ResultGrid).
-find_and_merge_trio(Grid, NumCols, ResultGrid) :-
-    length(Grid, Len),
-    NumRows is Len // NumCols,
-    find_trio_in_col(Grid, NumRows, NumCols, Row, Col, Value),
-    !,
-    merge_trio_in_col(Grid, Row, Col, Value, NumCols, ResultGrid).
+    (find_trio_in_row(Grid, NumRows, NumCols, Row, Col, Value)
+    -> merge_trio_in_row(Grid, Row, Col, Value, NumCols, ResultGrid)
+    ; find_trio_in_col(Grid, NumRows, NumCols, Row, Col, Value)
+    -> merge_trio_in_col(Grid, Row, Col, Value, NumCols, ResultGrid)
+    ; fail
+    ).
 
 find_and_merge_pair(Grid, NumCols, ResultGrid) :-
     length(Grid, Len),
     NumRows is Len // NumCols,
-    find_pair_in_row(Grid, NumRows, NumCols, Row, Col, Value),
-    !,
-    merge_pair_horizontal(Grid, Row, Col, Value, NumCols, ResultGrid).
-find_and_merge_pair(Grid, NumCols, ResultGrid) :-
+    (find_pair_in_row(Grid, NumRows, NumCols, Row, Col, Value)
+    -> merge_pair_horizontal(Grid, Row, Col, Value, NumCols, ResultGrid)
+    ; find_pair_in_col(Grid, NumRows, NumCols, Row, Col, Value)
+    -> merge_pair_vertical(Grid, Row, Col, Value, NumCols, ResultGrid)
+    ; Grid = ResultGrid
+    ).
+
+% Nueva función para encontrar y fusionar 4 bloques adyacentes
+find_and_merge_quad(Grid, NumCols, ResultGrid) :-
     length(Grid, Len),
     NumRows is Len // NumCols,
-    find_pair_in_col(Grid, NumRows, NumCols, Row, Col, Value),
+    find_quad_connected(Grid, NumRows, NumCols, BlockPositions, Value),
     !,
-    merge_pair_vertical(Grid, Row, Col, Value, NumCols, ResultGrid).
-find_and_merge_pair(Grid, _, Grid).
+    merge_quad_blocks(Grid, BlockPositions, Value, NumCols, ResultGrid).
+    
+% Busca cuatro bloques conectados con el mismo valor
+find_quad_connected(Grid, NumRows, NumCols, BlockPositions, Value) :-
+    between(1, NumRows, StartRow),
+    between(1, NumCols, StartCol),
+    grid_indexing:get_cell(Grid, StartRow, StartCol, NumCols, Value),
+    Value \= '-',
+    find_connected_blocks(Grid, NumRows, NumCols, [StartRow-StartCol], [], [StartRow-StartCol], Value, BlockPositions),
+    length(BlockPositions, 4).
+
+% Busca recursivamente bloques conectados con DFS
+find_connected_blocks(_, _, _, [], Visited, Visited, _, Visited).
+find_connected_blocks(Grid, NumRows, NumCols, [Row-Col|Stack], Visited, CurrentPath, Value, Result) :-
+    length(CurrentPath, Length),
+    (Length >= 4 
+    -> Result = CurrentPath
+    ; adjacent_cells(Row, Col, NumRows, NumCols, AdjacentCells),
+      filter_valid_cells(Grid, AdjacentCells, Visited, NumCols, Value, ValidCells),
+      append(ValidCells, Stack, NewStack),
+      append(Visited, ValidCells, NewVisited),
+      find_connected_blocks(Grid, NumRows, NumCols, NewStack, NewVisited, NewVisited, Value, Result)
+    ).
+
+% Obtiene las celdas adyacentes (arriba, abajo, izquierda, derecha)
+adjacent_cells(Row, Col, NumRows, NumCols, AdjacentCells) :-
+    findall(R-C, (
+        (R is Row-1, C is Col, R >= 1);
+        (R is Row+1, C is Col, R =< NumRows);
+        (R is Row, C is Col-1, C >= 1);
+        (R is Row, C is Col+1, C =< NumCols)
+    ), AdjacentCells).
+
+% Filtra las celdas que tienen el mismo valor y no han sido visitadas
+filter_valid_cells(Grid, AdjacentCells, Visited, NumCols, Value, ValidCells) :-
+    findall(R-C, (
+        member(R-C, AdjacentCells),
+        \+ member(R-C, Visited),
+        grid_indexing:get_cell(Grid, R, C, NumCols, CellValue),
+        CellValue == Value
+    ), ValidCells).
+
+% Fusiona cuatro bloques en uno con valor 8 veces el original
+merge_quad_blocks(Grid, BlockPositions, Value, NumCols, ResultGrid) :-
+    % Calculamos el nuevo valor (8 veces el valor original)
+    MergeValue is Value * 8,
+    
+    % Encontramos el centro aproximado de los bloques
+    sum_positions(BlockPositions, SumRow, SumCol),
+    AvgRow is round(SumRow / 4),
+    AvgCol is round(SumCol / 4),
+    
+    % Tratamos de usar una posición existente entre los bloques
+    find_best_position(BlockPositions, AvgRow, AvgCol, FinalRow, FinalCol),
+    
+    % Limpiamos todos los bloques originales
+    clear_blocks(Grid, BlockPositions, NumCols, TempGrid),
+    
+    % Colocamos el nuevo bloque en la posición elegida
+    grid_indexing:set_cell(TempGrid, FinalRow, FinalCol, NumCols, MergeValue, ResultGrid).
+
+% Suma las posiciones para calcular el centro
+sum_positions([], 0, 0).
+sum_positions([Row-Col|Rest], SumRow, SumCol) :-
+    sum_positions(Rest, RestRow, RestCol),
+    SumRow is RestRow + Row,
+    SumCol is RestCol + Col.
+
+% Encuentra la mejor posición para colocar el bloque fusionado
+% Ahora selecciona el bloque con la fila más pequeña (el más arriba)
+find_best_position(BlockPositions, _, _, FinalRow, FinalCol) :-
+    % Ordenamos por fila (para obtener el bloque más arriba)
+    findall(Row-Col, member(Row-Col, BlockPositions), Positions),
+    sort(Positions, SortedPositions),
+    % Tomamos el primer elemento (el que tiene la fila más pequeña)
+    SortedPositions = [FinalRow-FinalCol|_].
+
+% Limpia todos los bloques originales
+clear_blocks(Grid, [], _, Grid).
+clear_blocks(Grid, [Row-Col|Rest], NumCols, ResultGrid) :-
+    grid_indexing:set_cell(Grid, Row, Col, NumCols, '-', TempGrid),
+    clear_blocks(TempGrid, Rest, NumCols, ResultGrid).
 
 find_trio_in_row(Grid, NumRows, NumCols, Row, StartCol, Value) :-
     between(1, NumRows, Row),
