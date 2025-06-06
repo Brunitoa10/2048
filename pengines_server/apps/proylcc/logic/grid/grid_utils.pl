@@ -1,4 +1,3 @@
-
 :- module(grid_utils,
     [
         find_empty_row/4,
@@ -8,6 +7,7 @@
 
 :- use_module(grid_indexing).
 :- use_module(grid_merge).
+:- use_module(grid_gravity).
 
 find_empty_row(Grid, Col, NumCols, RowIndex) :-
     length(Grid, Len),
@@ -28,4 +28,5 @@ insert_block(Grid, Row, Col, Block, NumCols, NewGrid) :-
 
 insert_block_with_merge(Grid, Row, Col, Block, NumCols, FinalGrid) :-
     insert_block(Grid, Row, Col, Block, NumCols, TempGrid),
-    grid_merge:merge_all_possible(TempGrid, NumCols, FinalGrid).
+    grid_merge:merge_all_possible(TempGrid, NumCols, MergedGrid),
+    grid_gravity:apply_gravity(MergedGrid, NumCols, FinalGrid).
