@@ -1,5 +1,3 @@
-:- module(block_factory,
-    [ random_block/1 ]).
 :- module(block_factory, [ random_block/2 ]).
 
 /**
@@ -24,7 +22,7 @@ allowed_range(Max, Range) :-
     ; Max =< 64      -> Range = [2, 4, 8, 16, 32]
     ; Max =< 128     -> Range = [2, 4, 8, 16, 32, 64]
     ; Max =< 256     -> Range = [4, 8, 16, 32, 64, 128]
-    ; Max =< 512     -> Range = [8, 16, 32, 64, 128, 256]
+    ; Max =< 512     -> Range = [ 8, 16, 32, 64, 128, 256]
     ; Max =< 1024    -> Range = [16, 32, 64, 128, 256, 512]
     ; Max =< 2048    -> Range = [32, 64, 128, 256, 512, 1024]
     ;                 Range = [64, 128, 256, 512, 1024, 2048]
