@@ -4,11 +4,14 @@
     find_and_merge_single_with_effects/4
 ]).
 
-:- use_module(grid_indexing).
+% Importaciones limpias 
+:- use_module(grid_indexing, [get_cell/5, set_cell/6]).
 
+% Versión original para compatibilidad
 merge_all_possible(Grid, NumCols, FinalGrid) :-
     merge_all_possible_with_effects(Grid, NumCols, FinalGrid, _).
 
+% Nueva versión que genera efectos
 merge_all_possible_with_effects(Grid, NumCols, FinalGrid, Effects) :-
     merge_all_possible_with_effects_acc(Grid, NumCols, [], FinalGrid, Effects).
 
@@ -34,6 +37,7 @@ find_and_merge_any_with_effects(Grid, NumCols, ResultGrid, Effects) :-
       Effects = []
     ).
 
+% Nueva función que hace TODAS las combinaciones simultáneas posibles
 find_and_merge_single_with_effects(Grid, NumCols, ResultGrid, Effects) :-
     find_all_simultaneous_merges(Grid, NumCols, AllMerges),
     (AllMerges \= []
@@ -43,10 +47,12 @@ find_and_merge_single_with_effects(Grid, NumCols, ResultGrid, Effects) :-
       Effects = []
     ).
 
+% Encuentra todas las combinaciones que pueden ocurrir simultáneamente
 find_all_simultaneous_merges(Grid, NumCols, SimultaneousMerges) :-
     findall(merge(Type, Positions, Value), find_single_merge(Grid, NumCols, Type, Positions, Value), AllMerges),
     filter_non_overlapping_merges(AllMerges, SimultaneousMerges).
 
+% Encuentra una combinación específica
 find_single_merge(Grid, NumCols, quad, Positions, Value) :-
     length(Grid, Len),
     NumRows is Len // NumCols,
@@ -77,11 +83,13 @@ find_single_merge(Grid, NumCols, pair_col, [Row, Col], Value) :-
     NumRows is Len // NumCols,
     find_pair_in_col(Grid, NumRows, NumCols, Row, Col, Value).
 
+% Filtra combinaciones que no se superponen
 filter_non_overlapping_merges([], []).
 filter_non_overlapping_merges([Merge|Rest], [Merge|FilteredRest]) :-
     remove_overlapping_merges(Rest, Merge, NonOverlapping),
     filter_non_overlapping_merges(NonOverlapping, FilteredRest).
 
+% Remueve combinaciones que se superponen con la dada
 remove_overlapping_merges([], _, []).
 remove_overlapping_merges([Merge|Rest], ReferenceMerge, Result) :-
     (merges_overlap(Merge, ReferenceMerge)
@@ -90,14 +98,16 @@ remove_overlapping_merges([Merge|Rest], ReferenceMerge, Result) :-
       remove_overlapping_merges(Rest, ReferenceMerge, FilteredRest)
     ).
 
+% Determina si dos combinaciones se superponen
 merges_overlap(merge(_, Positions1, _), merge(_, Positions2, _)) :-
     merge_positions_to_cells(Positions1, Cells1),
     merge_positions_to_cells(Positions2, Cells2),
     intersection(Cells1, Cells2, Intersection),
     Intersection \= [].
 
+% Convierte posiciones de merge a lista de celdas afectadas
 merge_positions_to_cells(Positions, Cells) :-
-    (is_list(Positions), Positions = [Row-Col|_] 
+    (is_list(Positions), Positions = [_-_|_] 
     -> Cells = Positions
     ; Positions = [Row-Col]
     -> get_l_pattern_cells(Row, Col, Cells)
@@ -119,6 +129,7 @@ get_l_pattern_cells(Row, Col, Cells) :-
     NextCol is Col + 1,
     Cells = [Row-Col, NextRow-Col, NextRow-NextCol].
 
+% Aplica todas las combinaciones simultáneas
 apply_simultaneous_merges(Grid, NumCols, Merges, FinalGrid, TotalPoints) :-
     apply_merges_to_grid(Grid, NumCols, Merges, FinalGrid),
     calculate_total_points(Merges, TotalPoints).
@@ -154,6 +165,7 @@ calculate_merge_points(trio_col, Value, Points) :- Points is Value * 4.
 calculate_merge_points(pair_row, Value, Points) :- Points is Value * 2.
 calculate_merge_points(pair_col, Value, Points) :- Points is Value * 2.
 
+% Versiones con efectos para cada tipo de merge
 find_and_merge_quad_with_effects(Grid, NumCols, ResultGrid, [effect(ResultGrid, [newBlock(Points)])]) :-
     length(Grid, Len),
     NumRows is Len // NumCols,
@@ -199,10 +211,11 @@ find_and_merge_pair_with_effects(Grid, NumCols, ResultGrid, [effect(ResultGrid, 
     ),
     !.
 
+% Búsqueda de cuádruples conectados
 find_quad_connected(Grid, NumRows, NumCols, BlockPositions, Value) :-
     between(1, NumRows, StartRow),
     between(1, NumCols, StartCol),
-    grid_indexing:get_cell(Grid, StartRow, StartCol, NumCols, Value),
+    get_cell(Grid, StartRow, StartCol, NumCols, Value),
     number(Value),
     Value > 0,
     find_connected_blocks(Grid, NumRows, NumCols, [StartRow-StartCol], [StartRow-StartCol], Value, BlockPositions),
@@ -236,7 +249,7 @@ filter_valid_cells(Grid, AdjacentCells, Visited, NumCols, Value, ValidCells) :-
     findall(R-C, (
         member(R-C, AdjacentCells),
         \+ member(R-C, Visited),
-        grid_indexing:get_cell(Grid, R, C, NumCols, CellValue),
+        get_cell(Grid, R, C, NumCols, CellValue),
         CellValue == Value
     ), ValidCells).
 
@@ -249,13 +262,14 @@ merge_quad_blocks(Grid, BlockPositions, Value, NumCols, ResultGrid) :-
     
     clear_blocks(Grid, BlockPositions, NumCols, TempGrid),
     
-    grid_indexing:set_cell(TempGrid, FinalRow, FinalCol, NumCols, MergeValue, ResultGrid).
+    set_cell(TempGrid, FinalRow, FinalCol, NumCols, MergeValue, ResultGrid).
 
 clear_blocks(Grid, [], _, Grid) :- !.
 clear_blocks(Grid, [Row-Col|Rest], NumCols, ResultGrid) :-
-    grid_indexing:set_cell(Grid, Row, Col, NumCols, '-', TempGrid),
+    set_cell(Grid, Row, Col, NumCols, '-', TempGrid),
     clear_blocks(TempGrid, Rest, NumCols, ResultGrid).
 
+% Patrones L
 find_l_pattern_direct(Grid, NumRows, NumCols, Row, Col, Value) :-
     (find_l_pattern_1(Grid, NumRows, NumCols, Row, Col, Value) ;
      find_l_pattern_2(Grid, NumRows, NumCols, Row, Col, Value) ;
@@ -269,11 +283,11 @@ find_l_pattern_1(Grid, NumRows, NumCols, Row, Col, Value) :-
     Col < NumCols,
     NextRow is Row + 1,
     NextCol is Col + 1,
-    grid_indexing:get_cell(Grid, Row, Col, NumCols, Value),
+    get_cell(Grid, Row, Col, NumCols, Value),
     number(Value),
     Value > 0,
-    grid_indexing:get_cell(Grid, NextRow, Col, NumCols, Value),
-    grid_indexing:get_cell(Grid, NextRow, NextCol, NumCols, Value).
+    get_cell(Grid, NextRow, Col, NumCols, Value),
+    get_cell(Grid, NextRow, NextCol, NumCols, Value).
 
 find_l_pattern_2(Grid, NumRows, NumCols, Row, Col, Value) :-
     between(1, NumRows, Row),
@@ -281,11 +295,11 @@ find_l_pattern_2(Grid, NumRows, NumCols, Row, Col, Value) :-
     between(2, NumCols, Col),  
     NextRow is Row + 1,
     PrevCol is Col - 1,
-    grid_indexing:get_cell(Grid, Row, Col, NumCols, Value),
+    get_cell(Grid, Row, Col, NumCols, Value),
     number(Value),
     Value > 0,
-    grid_indexing:get_cell(Grid, NextRow, Col, NumCols, Value),
-    grid_indexing:get_cell(Grid, NextRow, PrevCol, NumCols, Value).
+    get_cell(Grid, NextRow, Col, NumCols, Value),
+    get_cell(Grid, NextRow, PrevCol, NumCols, Value).
 
 find_l_pattern_3(Grid, NumRows, NumCols, Row, Col, Value) :-
     between(1, NumRows, Row),
@@ -294,11 +308,11 @@ find_l_pattern_3(Grid, NumRows, NumCols, Row, Col, Value) :-
     Col < NumCols,
     NextRow is Row + 1,
     NextCol is Col + 1,
-    grid_indexing:get_cell(Grid, Row, Col, NumCols, Value),
+    get_cell(Grid, Row, Col, NumCols, Value),
     number(Value),
     Value > 0,
-    grid_indexing:get_cell(Grid, Row, NextCol, NumCols, Value),
-    grid_indexing:get_cell(Grid, NextRow, Col, NumCols, Value).
+    get_cell(Grid, Row, NextCol, NumCols, Value),
+    get_cell(Grid, NextRow, Col, NumCols, Value).
 
 find_l_pattern_4(Grid, NumRows, NumCols, Row, Col, Value) :-
     between(1, NumRows, Row),
@@ -306,11 +320,11 @@ find_l_pattern_4(Grid, NumRows, NumCols, Row, Col, Value) :-
     between(2, NumCols, Col),
     NextRow is Row + 1,
     PrevCol is Col - 1,
-    grid_indexing:get_cell(Grid, Row, Col, NumCols, Value),
+    get_cell(Grid, Row, Col, NumCols, Value),
     number(Value),
     Value > 0,
-    grid_indexing:get_cell(Grid, Row, PrevCol, NumCols, Value),
-    grid_indexing:get_cell(Grid, NextRow, Col, NumCols, Value).
+    get_cell(Grid, Row, PrevCol, NumCols, Value),
+    get_cell(Grid, NextRow, Col, NumCols, Value).
 
 merge_l_pattern_direct(Grid, Row, Col, Value, NumCols, ResultGrid) :-
     number(Value),
@@ -324,99 +338,101 @@ merge_l_pattern_direct(Grid, Row, Col, Value, NumCols, ResultGrid) :-
 merge_l_pattern_1(Grid, Row, Col, Value, NumCols, MergeValue, ResultGrid) :-
     NextRow is Row + 1,
     NextCol is Col + 1,
-    grid_indexing:get_cell(Grid, NextRow, Col, NumCols, Value),
-    grid_indexing:get_cell(Grid, NextRow, NextCol, NumCols, Value),
-    grid_indexing:set_cell(Grid, Row, Col, NumCols, '-', G1),
-    grid_indexing:set_cell(G1, NextRow, Col, NumCols, '-', G2),
-    grid_indexing:set_cell(G2, NextRow, NextCol, NumCols, '-', G3),
-    grid_indexing:set_cell(G3, Row, Col, NumCols, MergeValue, ResultGrid).
+    get_cell(Grid, NextRow, Col, NumCols, Value),
+    get_cell(Grid, NextRow, NextCol, NumCols, Value),
+    set_cell(Grid, Row, Col, NumCols, '-', G1),
+    set_cell(G1, NextRow, Col, NumCols, '-', G2),
+    set_cell(G2, NextRow, NextCol, NumCols, '-', G3),
+    set_cell(G3, Row, Col, NumCols, MergeValue, ResultGrid).
 
 merge_l_pattern_2(Grid, Row, Col, Value, NumCols, MergeValue, ResultGrid) :-
     NextRow is Row + 1,
     PrevCol is Col - 1,
     Col > 1,
-    grid_indexing:get_cell(Grid, NextRow, Col, NumCols, Value),
-    grid_indexing:get_cell(Grid, NextRow, PrevCol, NumCols, Value),
-    grid_indexing:set_cell(Grid, Row, Col, NumCols, '-', G1),
-    grid_indexing:set_cell(G1, NextRow, Col, NumCols, '-', G2),
-    grid_indexing:set_cell(G2, NextRow, PrevCol, NumCols, '-', G3),
-    grid_indexing:set_cell(G3, Row, Col, NumCols, MergeValue, ResultGrid).
+    get_cell(Grid, NextRow, Col, NumCols, Value),
+    get_cell(Grid, NextRow, PrevCol, NumCols, Value),
+    set_cell(Grid, Row, Col, NumCols, '-', G1),
+    set_cell(G1, NextRow, Col, NumCols, '-', G2),
+    set_cell(G2, NextRow, PrevCol, NumCols, '-', G3),
+    set_cell(G3, Row, Col, NumCols, MergeValue, ResultGrid).
 
 merge_l_pattern_3(Grid, Row, Col, Value, NumCols, MergeValue, ResultGrid) :-
     NextRow is Row + 1,
     NextCol is Col + 1,
-    grid_indexing:get_cell(Grid, Row, NextCol, NumCols, Value),
-    grid_indexing:get_cell(Grid, NextRow, Col, NumCols, Value),
-    grid_indexing:set_cell(Grid, Row, Col, NumCols, '-', G1),
-    grid_indexing:set_cell(G1, Row, NextCol, NumCols, '-', G2),
-    grid_indexing:set_cell(G2, NextRow, Col, NumCols, '-', G3),
-    grid_indexing:set_cell(G3, Row, Col, NumCols, MergeValue, ResultGrid).
+    get_cell(Grid, Row, NextCol, NumCols, Value),
+    get_cell(Grid, NextRow, Col, NumCols, Value),
+    set_cell(Grid, Row, Col, NumCols, '-', G1),
+    set_cell(G1, Row, NextCol, NumCols, '-', G2),
+    set_cell(G2, NextRow, Col, NumCols, '-', G3),
+    set_cell(G3, Row, Col, NumCols, MergeValue, ResultGrid).
 
 merge_l_pattern_4(Grid, Row, Col, Value, NumCols, MergeValue, ResultGrid) :-
     NextRow is Row + 1,
     PrevCol is Col - 1,
     Col > 1,
-    grid_indexing:get_cell(Grid, Row, PrevCol, NumCols, Value),
-    grid_indexing:get_cell(Grid, NextRow, Col, NumCols, Value),
-    grid_indexing:set_cell(Grid, Row, Col, NumCols, '-', G1),
-    grid_indexing:set_cell(G1, Row, PrevCol, NumCols, '-', G2),
-    grid_indexing:set_cell(G2, NextRow, Col, NumCols, '-', G3),
-    grid_indexing:set_cell(G3, Row, Col, NumCols, MergeValue, ResultGrid).
+    get_cell(Grid, Row, PrevCol, NumCols, Value),
+    get_cell(Grid, NextRow, Col, NumCols, Value),
+    set_cell(Grid, Row, Col, NumCols, '-', G1),
+    set_cell(G1, Row, PrevCol, NumCols, '-', G2),
+    set_cell(G2, NextRow, Col, NumCols, '-', G3),
+    set_cell(G3, Row, Col, NumCols, MergeValue, ResultGrid).
 
+% Tríos
 find_trio_in_row(Grid, NumRows, NumCols, Row, StartCol, Value) :-
     between(1, NumRows, Row),
     MaxStartCol is NumCols - 2,
     MaxStartCol > 0,
     between(1, MaxStartCol, StartCol),
-    grid_indexing:get_cell(Grid, Row, StartCol, NumCols, Value),
+    get_cell(Grid, Row, StartCol, NumCols, Value),
     number(Value),
     Value > 0,
     MiddleCol is StartCol + 1,
     EndCol is StartCol + 2,
-    grid_indexing:get_cell(Grid, Row, MiddleCol, NumCols, Value),
-    grid_indexing:get_cell(Grid, Row, EndCol, NumCols, Value).
+    get_cell(Grid, Row, MiddleCol, NumCols, Value),
+    get_cell(Grid, Row, EndCol, NumCols, Value).
 
 find_trio_in_col(Grid, NumRows, NumCols, StartRow, Col, Value) :-
     between(1, NumCols, Col),
     MaxStartRow is NumRows - 2,
     MaxStartRow > 0,
     between(1, MaxStartRow, StartRow),
-    grid_indexing:get_cell(Grid, StartRow, Col, NumCols, Value),
+    get_cell(Grid, StartRow, Col, NumCols, Value),
     number(Value),
     Value > 0,
     MiddleRow is StartRow + 1,
     EndRow is StartRow + 2,
-    grid_indexing:get_cell(Grid, MiddleRow, Col, NumCols, Value),
-    grid_indexing:get_cell(Grid, EndRow, Col, NumCols, Value).
+    get_cell(Grid, MiddleRow, Col, NumCols, Value),
+    get_cell(Grid, EndRow, Col, NumCols, Value).
 
 merge_trio_in_row(Grid, Row, StartCol, Value, NumCols, ResultGrid) :-
     number(Value),
     MergeValue is Value * 4,
     MiddleCol is StartCol + 1,
     EndCol is StartCol + 2,
-    grid_indexing:set_cell(Grid, Row, StartCol, NumCols, '-', TempGrid1),
-    grid_indexing:set_cell(TempGrid1, Row, EndCol, NumCols, '-', TempGrid2),
-    grid_indexing:set_cell(TempGrid2, Row, MiddleCol, NumCols, MergeValue, ResultGrid).
+    set_cell(Grid, Row, StartCol, NumCols, '-', TempGrid1),
+    set_cell(TempGrid1, Row, EndCol, NumCols, '-', TempGrid2),
+    set_cell(TempGrid2, Row, MiddleCol, NumCols, MergeValue, ResultGrid).
 
 merge_trio_in_col(Grid, StartRow, Col, Value, NumCols, ResultGrid) :-
     number(Value),
     MergeValue is Value * 4,
     MiddleRow is StartRow + 1,
     EndRow is StartRow + 2,
-    grid_indexing:set_cell(Grid, StartRow, Col, NumCols, '-', TempGrid1),
-    grid_indexing:set_cell(TempGrid1, EndRow, Col, NumCols, '-', TempGrid2),
-    grid_indexing:set_cell(TempGrid2, MiddleRow, Col, NumCols, MergeValue, ResultGrid).
+    set_cell(Grid, StartRow, Col, NumCols, '-', TempGrid1),
+    set_cell(TempGrid1, EndRow, Col, NumCols, '-', TempGrid2),
+    set_cell(TempGrid2, MiddleRow, Col, NumCols, MergeValue, ResultGrid).
 
+% Pares
 find_pair_in_row(Grid, NumRows, NumCols, Row, Col, Value) :-
     between(1, NumRows, Row),
     MaxCol is NumCols - 1,
     MaxCol > 0,
     between(1, MaxCol, Col),
     NextCol is Col + 1,
-    grid_indexing:get_cell(Grid, Row, Col, NumCols, Value),
+    get_cell(Grid, Row, Col, NumCols, Value),
     number(Value),
     Value > 0,
-    grid_indexing:get_cell(Grid, Row, NextCol, NumCols, Value).
+    get_cell(Grid, Row, NextCol, NumCols, Value).
 
 find_pair_in_col(Grid, NumRows, NumCols, Row, Col, Value) :-
     between(1, NumCols, Col),
@@ -424,21 +440,21 @@ find_pair_in_col(Grid, NumRows, NumCols, Row, Col, Value) :-
     MaxRow > 0,
     between(1, MaxRow, Row),
     NextRow is Row + 1,
-    grid_indexing:get_cell(Grid, Row, Col, NumCols, Value),
+    get_cell(Grid, Row, Col, NumCols, Value),
     number(Value),
     Value > 0,
-    grid_indexing:get_cell(Grid, NextRow, Col, NumCols, Value).
+    get_cell(Grid, NextRow, Col, NumCols, Value).
 
 merge_pair_horizontal(Grid, Row, Col, Value, NumCols, ResultGrid) :-
     number(Value),
     Sum is Value + Value,
     NextCol is Col + 1,
-    grid_indexing:set_cell(Grid, Row, Col, NumCols, Sum, TempGrid),
-    grid_indexing:set_cell(TempGrid, Row, NextCol, NumCols, '-', ResultGrid).
+    set_cell(Grid, Row, Col, NumCols, Sum, TempGrid),
+    set_cell(TempGrid, Row, NextCol, NumCols, '-', ResultGrid).
 
 merge_pair_vertical(Grid, Row, Col, Value, NumCols, ResultGrid) :-
     number(Value),
     Sum is Value + Value,
     NextRow is Row + 1,
-    grid_indexing:set_cell(Grid, Row, Col, NumCols, Sum, TempGrid),
-    grid_indexing:set_cell(TempGrid, NextRow, Col, NumCols, '-', ResultGrid).
+    set_cell(Grid, Row, Col, NumCols, Sum, TempGrid),
+    set_cell(TempGrid, NextRow, Col, NumCols, '-', ResultGrid).
