@@ -6,11 +6,9 @@
 
 :- use_module(grid_indexing).
 
-% Versión original para compatibilidad
 merge_all_possible(Grid, NumCols, FinalGrid) :-
     merge_all_possible_with_effects(Grid, NumCols, FinalGrid, _).
 
-% Nueva versión que genera efectos
 merge_all_possible_with_effects(Grid, NumCols, FinalGrid, Effects) :-
     merge_all_possible_with_effects_acc(Grid, NumCols, [], FinalGrid, Effects).
 
@@ -36,7 +34,6 @@ find_and_merge_any_with_effects(Grid, NumCols, ResultGrid, Effects) :-
       Effects = []
     ).
 
-% Nueva función que hace TODAS las combinaciones simultáneas posibles
 find_and_merge_single_with_effects(Grid, NumCols, ResultGrid, Effects) :-
     find_all_simultaneous_merges(Grid, NumCols, AllMerges),
     (AllMerges \= []
@@ -46,12 +43,10 @@ find_and_merge_single_with_effects(Grid, NumCols, ResultGrid, Effects) :-
       Effects = []
     ).
 
-% Encuentra todas las combinaciones que pueden ocurrir simultáneamente
 find_all_simultaneous_merges(Grid, NumCols, SimultaneousMerges) :-
     findall(merge(Type, Positions, Value), find_single_merge(Grid, NumCols, Type, Positions, Value), AllMerges),
     filter_non_overlapping_merges(AllMerges, SimultaneousMerges).
 
-% Encuentra una combinación específica
 find_single_merge(Grid, NumCols, quad, Positions, Value) :-
     length(Grid, Len),
     NumRows is Len // NumCols,
@@ -82,13 +77,11 @@ find_single_merge(Grid, NumCols, pair_col, [Row, Col], Value) :-
     NumRows is Len // NumCols,
     find_pair_in_col(Grid, NumRows, NumCols, Row, Col, Value).
 
-% Filtra combinaciones que no se superponen
 filter_non_overlapping_merges([], []).
 filter_non_overlapping_merges([Merge|Rest], [Merge|FilteredRest]) :-
     remove_overlapping_merges(Rest, Merge, NonOverlapping),
     filter_non_overlapping_merges(NonOverlapping, FilteredRest).
 
-% Remueve combinaciones que se superponen con la dada
 remove_overlapping_merges([], _, []).
 remove_overlapping_merges([Merge|Rest], ReferenceMerge, Result) :-
     (merges_overlap(Merge, ReferenceMerge)
@@ -97,39 +90,35 @@ remove_overlapping_merges([Merge|Rest], ReferenceMerge, Result) :-
       remove_overlapping_merges(Rest, ReferenceMerge, FilteredRest)
     ).
 
-% Determina si dos combinaciones se superponen
 merges_overlap(merge(_, Positions1, _), merge(_, Positions2, _)) :-
     merge_positions_to_cells(Positions1, Cells1),
     merge_positions_to_cells(Positions2, Cells2),
     intersection(Cells1, Cells2, Intersection),
     Intersection \= [].
 
-% Convierte posiciones de merge a lista de celdas afectadas
 merge_positions_to_cells(Positions, Cells) :-
-    (is_list(Positions), Positions = [Row-Col|_] % quad
+    (is_list(Positions), Positions = [Row-Col|_] 
     -> Cells = Positions
-    ; Positions = [Row-Col] % l_pattern
+    ; Positions = [Row-Col]
     -> get_l_pattern_cells(Row, Col, Cells)
-    ; Positions = [Row, StartCol], number(Row) % trio_row
+    ; Positions = [Row, StartCol], number(Row)
     -> EndCol is StartCol + 2,
        MiddleCol is StartCol + 1,
        Cells = [Row-StartCol, Row-MiddleCol, Row-EndCol]
-    ; Positions = [StartRow, Col], number(StartRow) % trio_col
+    ; Positions = [StartRow, Col], number(StartRow)
     -> EndRow is StartRow + 2,
        MiddleRow is StartRow + 1,
        Cells = [StartRow-Col, MiddleRow-Col, EndRow-Col]
-    ; Positions = [Row, Col] % pair
-    -> Cells = [Row-Col, Row-(Col+1)] % Asumimos horizontal, podría mejorarse
+    ; Positions = [Row, Col] 
+    -> Cells = [Row-Col, Row-(Col+1)] 
     ; Cells = []
     ).
 
 get_l_pattern_cells(Row, Col, Cells) :-
-    % Simplificación: devuelve las 3 celdas básicas de un patrón L
     NextRow is Row + 1,
     NextCol is Col + 1,
     Cells = [Row-Col, NextRow-Col, NextRow-NextCol].
 
-% Aplica todas las combinaciones simultáneas
 apply_simultaneous_merges(Grid, NumCols, Merges, FinalGrid, TotalPoints) :-
     apply_merges_to_grid(Grid, NumCols, Merges, FinalGrid),
     calculate_total_points(Merges, TotalPoints).
@@ -165,7 +154,6 @@ calculate_merge_points(trio_col, Value, Points) :- Points is Value * 4.
 calculate_merge_points(pair_row, Value, Points) :- Points is Value * 2.
 calculate_merge_points(pair_col, Value, Points) :- Points is Value * 2.
 
-% Versiones con efectos para cada tipo de merge
 find_and_merge_quad_with_effects(Grid, NumCols, ResultGrid, [effect(ResultGrid, [newBlock(Points)])]) :-
     length(Grid, Len),
     NumRows is Len // NumCols,
@@ -211,7 +199,6 @@ find_and_merge_pair_with_effects(Grid, NumCols, ResultGrid, [effect(ResultGrid, 
     ),
     !.
 
-% Resto de predicados originales sin cambios...
 find_quad_connected(Grid, NumRows, NumCols, BlockPositions, Value) :-
     between(1, NumRows, StartRow),
     between(1, NumCols, StartCol),
