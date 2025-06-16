@@ -33,21 +33,22 @@ insert_block_with_merge(Grid, Row, Col, Block, NumCols, FinalGrid) :-
 
 insert_block_with_merge_effects(Grid, Row, Col, Block, NumCols, Effects) :-
     insert_block(Grid, Row, Col, Block, NumCols, TempGrid),
-    apply_merge_and_gravity_with_effects(TempGrid, NumCols, [effect(TempGrid, [])], Effects).
+    apply_merge_and_gravity_with_individual_effects(TempGrid, NumCols, [effect(TempGrid, [])], Effects).
 
-apply_merge_and_gravity_with_effects(Grid, NumCols, AccEffects, FinalEffects) :-
+apply_merge_and_gravity_with_individual_effects(Grid, NumCols, AccEffects, FinalEffects) :-
+
     grid_gravity:apply_gravity(Grid, NumCols, GravityGrid),
-    
+
     (Grid \= GravityGrid
     -> append(AccEffects, [effect(GravityGrid, [])], GravityEffects)
     ;  GravityEffects = AccEffects
     ),
 
-    grid_merge:find_and_merge_single_with_effects(GravityGrid, NumCols, MergedGrid, MergeEffects),
+    grid_merge:merge_all_possible_with_effects(GravityGrid, NumCols, FinalMergedGrid, MergeEffects),
     
-    (GravityGrid \= MergedGrid
+    (MergeEffects \= []
     -> append(GravityEffects, MergeEffects, NewEffects),
-       apply_merge_and_gravity_with_effects(MergedGrid, NumCols, NewEffects, FinalEffects)
+       apply_merge_and_gravity_with_individual_effects(FinalMergedGrid, NumCols, NewEffects, FinalEffects)
     ; 
        (GravityEffects = []
        -> FinalEffects = [effect(Grid, [])]

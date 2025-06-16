@@ -7,39 +7,48 @@
 :- use_module(logic/grid/grid_utils).
 :- use_module(logic/block_factory, [random_block/2]).
 
-shoot(Block, Column, Grid, NumCols, [effect(UpdatedGrid, EffectInfo)]) :-
+shoot(Block, Column, Grid, NumCols, Effects) :-
     find_empty_row(Grid, Column, NumCols, RowIndex),
-    insert_block_with_merge(Grid, RowIndex, Column, Block, NumCols, UpdatedGrid),
-    calculate_effects(Grid, UpdatedGrid, Block, EffectInfo).
+    insert_block_with_merge_effects(Grid, RowIndex, Column, Block, NumCols, RawEffects),
+    enhance_effects_with_game_info(Grid, RawEffects, Effects).
 
-calculate_effects(OldGrid, NewGrid, Block, EffectInfo) :-
-    calculate_points(OldGrid, NewGrid, Points),
-    detect_combo(OldGrid, NewGrid, ComboCount),
-    detect_new_maximum(OldGrid, NewGrid, NewMax),
-    build_effect_list(Points, ComboCount, NewMax, EffectInfo).
+enhance_effects_with_game_info(OriginalGrid, RawEffects, EnhancedEffects) :-
+    enhance_effects_list(OriginalGrid, RawEffects, [], 0, EnhancedEffects).
 
-calculate_points(OldGrid, NewGrid, Points) :-
-    findall(V, (member(V, OldGrid), number(V)), OldValues),
-    findall(V, (member(V, NewGrid), number(V)), NewValues),
-    sum_list(OldValues, OldSum),
-    sum_list(NewValues, NewSum),
-    Points is NewSum - OldSum.
+enhance_effects_list(_, [], Acc, _, Acc).
+enhance_effects_list(OriginalGrid, [effect(CurrentGrid, EffectInfo)|Rest], Acc, CombinationsSoFar, FinalEffects) :-
+    detect_new_maximum_for_effect(OriginalGrid, CurrentGrid, NewMax),
+    (has_merge_effect(EffectInfo)
+    -> NewCombinationsSoFar is CombinationsSoFar + 1
+    ; NewCombinationsSoFar = CombinationsSoFar
+    ),
+    (has_merge_effect(EffectInfo), NewCombinationsSoFar > 1
+    -> ComboCount = NewCombinationsSoFar
+    ; ComboCount = 0
+    ),
+    
+    build_enhanced_effect_list(EffectInfo, ComboCount, NewMax, EnhancedInfo),
 
-detect_combo(OldGrid, NewGrid, ComboCount) :-
-    findall(V, (member(V, OldGrid), number(V)), OldValues),
-    findall(V, (member(V, NewGrid), number(V)), NewValues),
-    length(OldValues, OldCount),
-    length(NewValues, NewCount),
-    (OldCount > NewCount -> 
-        ComboCount is OldCount - NewCount
-    ; 
-        ComboCount = 0
+    append(Acc, [effect(CurrentGrid, EnhancedInfo)], NewAcc),
+    
+    enhance_effects_list(CurrentGrid, Rest, NewAcc, NewCombinationsSoFar, FinalEffects).
+
+count_merge_effects([], 0).
+count_merge_effects([effect(_, EffectInfo)|Rest], Count) :-
+    count_merge_effects(Rest, RestCount),
+    (has_merge_effect(EffectInfo)
+    -> Count is RestCount + 1
+    ; Count = RestCount
     ).
 
-detect_new_maximum(OldGrid, NewGrid, NewMax) :-
-    max_block(OldGrid, OldMax),
+has_merge_effect(EffectInfo) :-
+    member(newBlock(Points), EffectInfo),
+    Points > 0.
+
+detect_new_maximum_for_effect(OriginalGrid, NewGrid, NewMax) :-
+    max_block(OriginalGrid, OriginalMax),
     max_block(NewGrid, CurrentMax),
-    (CurrentMax > OldMax -> 
+    (CurrentMax > OriginalMax -> 
         NewMax = CurrentMax
     ; 
         NewMax = 0
@@ -49,12 +58,17 @@ max_block(Grid, Max) :-
     include(number, Grid, Numbers),
     (Numbers == [] -> Max = 0 ; max_list(Numbers, Max)).
 
-build_effect_list(Points, ComboCount, NewMax, EffectInfo) :-
+build_enhanced_effect_list(OriginalInfo, ComboCount, NewMax, EnhancedInfo) :-
     findall(Effect, (
-        (Points > 0 -> Effect = newBlock(Points) ; fail);
-        (ComboCount > 1 -> Effect = combo(ComboCount) ; fail);
-        (NewMax > 0 -> Effect = newMaximum(NewMax) ; fail)
-    ), EffectInfo).
+        member(Effect, OriginalInfo)
+    ), BaseEffects),
+
+    findall(AdditionalEffect, (
+        (ComboCount > 1 -> AdditionalEffect = combo(ComboCount) ; fail);
+        (NewMax > 0 -> AdditionalEffect = newMaximum(NewMax) ; fail)
+    ), ExtraEffects),
+
+    append(BaseEffects, ExtraEffects, EnhancedInfo).
 
 randomBlock(Grid, Block) :-
     random_block(Grid, Block).
