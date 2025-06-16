@@ -20,12 +20,16 @@ function Board({ grid, numOfColumns, onLaneClick }: BoardProps) {
           gridTemplateRows: `repeat(${numOfRows}, 70px)`,
         }}
       >
-        {/* Lanes para manejar los clics */}
+        
         {Array.from({ length: numOfColumns }).map((_, i) => (
-          <Lane key={i} index={i} numOfRows={numOfRows} onClick={onLaneClick} />
+          <Lane 
+            key={i} 
+            index={i} 
+            numOfRows={numOfRows} 
+            onClick={onLaneClick}
+          />
         ))}
 
-        {/* Renderizado de los bloques */}
         {grid.map((value, i) => (
           <GridBlock
             key={i}
