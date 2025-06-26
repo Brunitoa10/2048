@@ -489,7 +489,7 @@ merge_pair_horizontal_targeted(Grid, Row, Col, Value, NumCols, TargetCol, Result
     
     (DistanceCol =< DistanceNextCol ->
         set_cell(Grid, Row, Col, NumCols, Sum, TempGrid),
-        set_cell(TempGrid, Row, NextCol, NumCols, '-', ResultGrid)
+        set_cell(TempGrid, Row, NextCol, NumCols, '-', ResultGrid);
         set_cell(Grid, Row, NextCol, NumCols, Sum, TempGrid),
         set_cell(TempGrid, Row, Col, NumCols, '-', ResultGrid)
     ).
