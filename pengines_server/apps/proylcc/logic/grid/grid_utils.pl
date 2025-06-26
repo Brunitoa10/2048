@@ -3,7 +3,8 @@
         find_empty_row/4,
         insert_block/6,
         insert_block_with_merge/6,
-        insert_block_with_merge_effects/6
+        insert_block_with_merge_effects/6,
+        insert_block_with_merge_effects_targeted/7
     ]).
 
 :- use_module(grid_indexing).
@@ -35,8 +36,11 @@ insert_block_with_merge_effects(Grid, Row, Col, Block, NumCols, Effects) :-
     insert_block(Grid, Row, Col, Block, NumCols, TempGrid),
     apply_merge_and_gravity_with_individual_effects(TempGrid, NumCols, [effect(TempGrid, [])], Effects).
 
-apply_merge_and_gravity_with_individual_effects(Grid, NumCols, AccEffects, FinalEffects) :-
+insert_block_with_merge_effects_targeted(Grid, Row, Col, Block, NumCols, TargetCol, Effects) :-
+    insert_block(Grid, Row, Col, Block, NumCols, TempGrid),
+    apply_merge_and_gravity_with_individual_effects_targeted(TempGrid, NumCols, TargetCol, [effect(TempGrid, [])], Effects).
 
+apply_merge_and_gravity_with_individual_effects(Grid, NumCols, AccEffects, FinalEffects) :-
     grid_gravity:apply_gravity(Grid, NumCols, GravityGrid),
 
     (Grid \= GravityGrid
@@ -49,6 +53,26 @@ apply_merge_and_gravity_with_individual_effects(Grid, NumCols, AccEffects, Final
     (MergeEffects \= []
     -> append(GravityEffects, MergeEffects, NewEffects),
        apply_merge_and_gravity_with_individual_effects(FinalMergedGrid, NumCols, NewEffects, FinalEffects)
+    ; 
+       (GravityEffects = []
+       -> FinalEffects = [effect(Grid, [])]
+       ;  FinalEffects = GravityEffects
+       )
+    ).
+
+apply_merge_and_gravity_with_individual_effects_targeted(Grid, NumCols, TargetCol, AccEffects, FinalEffects) :-
+    grid_gravity:apply_gravity(Grid, NumCols, GravityGrid),
+
+    (Grid \= GravityGrid
+    -> append(AccEffects, [effect(GravityGrid, [])], GravityEffects)
+    ;  GravityEffects = AccEffects
+    ),
+
+    grid_merge:merge_all_possible_with_effects_targeted(GravityGrid, NumCols, TargetCol, FinalMergedGrid, MergeEffects),
+    
+    (MergeEffects \= []
+    -> append(GravityEffects, MergeEffects, NewEffects),
+       apply_merge_and_gravity_with_individual_effects_targeted(FinalMergedGrid, NumCols, TargetCol, NewEffects, FinalEffects)
     ; 
        (GravityEffects = []
        -> FinalEffects = [effect(Grid, [])]

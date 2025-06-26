@@ -1,6 +1,7 @@
 :- module(grid_merge, [
     merge_all_possible/3,
     merge_all_possible_with_effects/4,
+    merge_all_possible_with_effects_targeted/5,
     find_and_merge_single_with_effects/4
 ]).
 
@@ -12,6 +13,9 @@ merge_all_possible(Grid, NumCols, FinalGrid) :-
 merge_all_possible_with_effects(Grid, NumCols, FinalGrid, Effects) :-
     merge_step_by_step(Grid, NumCols, [], FinalGrid, Effects).
 
+merge_all_possible_with_effects_targeted(Grid, NumCols, TargetCol, FinalGrid, Effects) :-
+    merge_step_by_step_targeted(Grid, NumCols, TargetCol, [], FinalGrid, Effects).
+
 merge_step_by_step(Grid, NumCols, AccEffects, FinalGrid, FinalEffects) :-
     find_and_merge_one_pattern_with_effects(Grid, NumCols, TempGrid, StepEffects),
     (Grid \= TempGrid -> 
@@ -21,7 +25,16 @@ merge_step_by_step(Grid, NumCols, AccEffects, FinalGrid, FinalEffects) :-
        FinalEffects = AccEffects
     ).
 
-% Buscar UN patrón a la vez, en orden de prioridad (mayor a menor puntaje)
+merge_step_by_step_targeted(Grid, NumCols, TargetCol, AccEffects, FinalGrid, FinalEffects) :-
+    find_and_merge_one_pattern_with_effects_targeted(Grid, NumCols, TargetCol, TempGrid, StepEffects),
+    (Grid \= TempGrid -> 
+       append(AccEffects, StepEffects, NewAccEffects),
+       merge_step_by_step_targeted(TempGrid, NumCols, TargetCol, NewAccEffects, FinalGrid, FinalEffects);
+       FinalGrid = Grid,
+       FinalEffects = AccEffects
+    ).
+
+% Busca un patron a la vez, de mayor a menor puntaje
 find_and_merge_one_pattern_with_effects(Grid, NumCols, ResultGrid, Effects) :-
     (find_and_merge_quad_with_effects(Grid, NumCols, TempGrid, Effects)
     -> ResultGrid = TempGrid
@@ -35,7 +48,19 @@ find_and_merge_one_pattern_with_effects(Grid, NumCols, ResultGrid, Effects) :-
       Effects = []
     ).
 
-% Función original para combinaciones 
+find_and_merge_one_pattern_with_effects_targeted(Grid, NumCols, TargetCol, ResultGrid, Effects) :-
+    (find_and_merge_quad_with_effects(Grid, NumCols, TempGrid, Effects)
+    -> ResultGrid = TempGrid
+    ; find_and_merge_specific_l_pattern_with_effects(Grid, NumCols, TempGrid, Effects)
+    -> ResultGrid = TempGrid
+    ; find_and_merge_trio_with_effects(Grid, NumCols, TempGrid, Effects)
+    -> ResultGrid = TempGrid
+    ; find_and_merge_pair_with_effects_targeted(Grid, NumCols, TargetCol, TempGrid, Effects)
+    -> ResultGrid = TempGrid
+    ; ResultGrid = Grid,
+      Effects = []
+    ).
+
 find_and_merge_single_with_effects(Grid, NumCols, ResultGrid, Effects) :-
     find_all_simultaneous_merges(Grid, NumCols, AllMerges),
     (AllMerges \= []
@@ -50,7 +75,6 @@ find_all_simultaneous_merges(Grid, NumCols, SimultaneousMerges) :-
     findall(merge(Type, Positions, Value), find_single_merge(Grid, NumCols, Type, Positions, Value), AllMerges),
     filter_non_overlapping_merges(AllMerges, SimultaneousMerges).
 
-% Encuentra una combinación específica
 find_single_merge(Grid, NumCols, quad, Positions, Value) :-
     length(Grid, Len),
     NumRows is Len // NumCols,
@@ -123,7 +147,6 @@ get_l_pattern_cells(Row, Col, Cells) :-
     NextCol is Col + 1,
     Cells = [Row-Col, NextRow-Col, NextRow-NextCol].
 
-% Aplica todas las combinaciones simultáneas
 apply_simultaneous_merges(Grid, NumCols, Merges, FinalGrid, TotalPoints) :-
     apply_merges_to_grid(Grid, NumCols, Merges, FinalGrid),
     calculate_total_points(Merges, TotalPoints).
@@ -159,7 +182,6 @@ calculate_merge_points(trio_col, Value, Points) :- Points is Value * 4.
 calculate_merge_points(pair_row, Value, Points) :- Points is Value * 2.
 calculate_merge_points(pair_col, Value, Points) :- Points is Value * 2.
 
-% Versiones con efectos para cada tipo de merge 
 find_and_merge_quad_with_effects(Grid, NumCols, ResultGrid, [effect(ResultGrid, [newBlock(Points)])]) :-
     length(Grid, Len),
     NumRows is Len // NumCols,
@@ -198,6 +220,18 @@ find_and_merge_pair_with_effects(Grid, NumCols, ResultGrid, [effect(ResultGrid, 
     NumRows is Len // NumCols,
     (find_pair_in_row(Grid, NumRows, NumCols, Row, Col, Value)
     -> merge_pair_horizontal(Grid, Row, Col, Value, NumCols, ResultGrid),
+       Points is Value * 2
+    ; find_pair_in_col(Grid, NumRows, NumCols, Row, Col, Value)
+    -> merge_pair_vertical(Grid, Row, Col, Value, NumCols, ResultGrid),
+       Points is Value * 2
+    ),
+    !.
+
+find_and_merge_pair_with_effects_targeted(Grid, NumCols, TargetCol, ResultGrid, [effect(ResultGrid, [newBlock(Points)])]) :-
+    length(Grid, Len),
+    NumRows is Len // NumCols,
+    (find_pair_in_row(Grid, NumRows, NumCols, Row, Col, Value)
+    -> merge_pair_horizontal_targeted(Grid, Row, Col, Value, NumCols, TargetCol, ResultGrid),
        Points is Value * 2
     ; find_pair_in_col(Grid, NumRows, NumCols, Row, Col, Value)
     -> merge_pair_vertical(Grid, Row, Col, Value, NumCols, ResultGrid),
@@ -371,7 +405,7 @@ merge_l_pattern_4(Grid, Row, Col, Value, NumCols, MergeValue, ResultGrid) :-
     set_cell(G2, NextRow, Col, NumCols, '-', G3),
     set_cell(G3, Row, Col, NumCols, MergeValue, ResultGrid).
 
-% Tríos
+% Patron Trios
 find_trio_in_row(Grid, NumRows, NumCols, Row, StartCol, Value) :-
     between(1, NumRows, Row),
     MaxStartCol is NumCols - 2,
@@ -416,7 +450,7 @@ merge_trio_in_col(Grid, StartRow, Col, Value, NumCols, ResultGrid) :-
     set_cell(TempGrid1, EndRow, Col, NumCols, '-', TempGrid2),
     set_cell(TempGrid2, MiddleRow, Col, NumCols, MergeValue, ResultGrid).
 
-% Pares
+% Patron Pares
 find_pair_in_row(Grid, NumRows, NumCols, Row, Col, Value) :-
     between(1, NumRows, Row),
     MaxCol is NumCols - 1,
@@ -445,6 +479,20 @@ merge_pair_horizontal(Grid, Row, Col, Value, NumCols, ResultGrid) :-
     NextCol is Col + 1,
     set_cell(Grid, Row, Col, NumCols, Sum, TempGrid),
     set_cell(TempGrid, Row, NextCol, NumCols, '-', ResultGrid).
+
+merge_pair_horizontal_targeted(Grid, Row, Col, Value, NumCols, TargetCol, ResultGrid) :-
+    number(Value),
+    Sum is Value + Value,
+    NextCol is Col + 1,
+    DistanceCol is abs(Col - TargetCol),
+    DistanceNextCol is abs(NextCol - TargetCol),
+    
+    (DistanceCol =< DistanceNextCol ->
+        set_cell(Grid, Row, Col, NumCols, Sum, TempGrid),
+        set_cell(TempGrid, Row, NextCol, NumCols, '-', ResultGrid)
+        set_cell(Grid, Row, NextCol, NumCols, Sum, TempGrid),
+        set_cell(TempGrid, Row, Col, NumCols, '-', ResultGrid)
+    ).
 
 merge_pair_vertical(Grid, Row, Col, Value, NumCols, ResultGrid) :-
     number(Value),

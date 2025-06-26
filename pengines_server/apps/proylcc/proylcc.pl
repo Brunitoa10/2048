@@ -9,7 +9,7 @@
 
 shoot(Block, Column, Grid, NumCols, Effects) :-
     find_empty_row(Grid, Column, NumCols, RowIndex),
-    insert_block_with_merge_effects(Grid, RowIndex, Column, Block, NumCols, RawEffects),
+    insert_block_with_merge_effects_targeted(Grid, RowIndex, Column, Block, NumCols, Column, RawEffects),
     enhance_effects_with_game_info(Grid, RawEffects, Effects).
 
 enhance_effects_with_game_info(OriginalGrid, RawEffects, EnhancedEffects) :-
