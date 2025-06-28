@@ -1,4 +1,4 @@
-:- module(block_factory, [ random_block/2 ]).
+:- module(block_factory, [ random_block/2, allowed_range/2 ]).
 
 random_block(Grid, Block) :-
     max_block(Grid, Max),
@@ -10,14 +10,31 @@ max_block(Grid, Max) :-
     ( Numbers == [] -> Max = 0 ; max_list(Numbers, Max) ).
 
 allowed_range(Max, Range) :-
-    ( Max =< 8       -> Range = [2, 4]
-    ; Max =< 16      -> Range = [2, 4, 8]
-    ; Max =< 32      -> Range = [2, 4, 8, 16]
-    ; Max =< 64      -> Range = [2, 4, 8, 16, 32]
-    ; Max =< 128     -> Range = [2, 4, 8, 16, 32, 64]
-    ; Max =< 256     -> Range = [4, 8, 16, 32, 64, 128]
-    ; Max =< 512     -> Range = [8, 16, 32, 64, 128, 256]
-    ; Max =< 1024    -> Range = [16, 32, 64, 128, 256, 512]
-    ; Max =< 2048    -> Range = [32, 64, 128, 256, 512, 1024]
-    ;                 Range = [64, 128, 256, 512, 1024, 2048]
+    ( member(Max, [2, 4, 8])           -> Range = [2, 4]
+    ; Max =:= 16                       -> Range = [2, 4, 8]
+    ; Max =:= 32                       -> Range = [2, 4, 8, 16]
+    ; Max =:= 64                       -> Range = [2, 4, 8, 16, 32]
+    ; member(Max, [128, 256, 512])     -> Range = [2, 4, 8, 16, 32, 64]
+    ; Max =:= 1024                     -> Range = [4, 8, 16, 32, 64, 128]
+    ; Max =:= 2048                     -> Range = [8, 16, 32, 64, 128, 256]
+    ; member(Max, [4096, 8192])        -> Range = [16, 32, 64, 128, 256, 512]
+    ; Max =:= 16384                    -> Range = [32, 64, 128, 256, 512, 1024]
+    ; Max >= 32768                     -> calculate_dynamic_range(Max, Range)
+    ; Range = [2, 4]                   
     ).
+
+calculate_dynamic_range(Max, Range) :-
+    Levels is floor(log(Max / 32768) / log(2)),
+
+    BaseRange = [64, 128, 256, 512, 1024, 2048],
+    
+    adjust_range_for_level(BaseRange, Levels, Range).
+
+adjust_range_for_level(Range, 0, Range) :- !.
+adjust_range_for_level([_|RestRange], Level, FinalRange) :-
+    Level > 0,
+    last(RestRange, LastElement),
+    NewTopElement is LastElement * 2,
+    append(RestRange, [NewTopElement], NewRange),
+    NextLevel is Level - 1,
+    adjust_range_for_level(NewRange, NextLevel, FinalRange).

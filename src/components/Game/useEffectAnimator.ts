@@ -23,7 +23,17 @@ export interface NewMaximumTerm {
   args: [number];
 }
 
-type EffectInfoTerm = NewBlockTerm | ComboTerm | NewMaximumTerm;
+export interface BlockRetiredTerm {
+  functor: 'blockRetired';
+  args: [number];
+}
+
+export interface NewBlockAddedTerm {
+  functor: 'newBlockAdded';
+  args: [number];
+}
+
+type EffectInfoTerm = NewBlockTerm | ComboTerm | NewMaximumTerm | BlockRetiredTerm | NewBlockAddedTerm;
 
 export function useEffectAnimator(
   setGrid: (grid: Grid) => void,
@@ -60,6 +70,18 @@ export function useEffectAnimator(
         addNotification({
           type: 'newMaximum',
           message: `¡Nuevo máximo: ${args[0]}!`,
+          value: args[0]
+        });
+      } else if (functor === 'blockRetired') {
+        addNotification({
+          type: 'blockRetired',
+          message: `Bloque ${args[0]} retirado`,
+          value: args[0]
+        });
+      } else if (functor === 'newBlockAdded') {
+        addNotification({
+          type: 'newBlockAdded',
+          message: `Nuevo bloque disponible: ${args[0]}`,
           value: args[0]
         });
       }

@@ -590,3 +590,17 @@ body {
     transform: translateY(10px) scale(0.9);
   }
 }
+
+/* Estilos adicionales para las nuevas notificaciones */
+
+.notification-blockRetired {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
+  color: white;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.notification-newBlockAdded {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.9), rgba(147, 51, 234, 0.9));
+  color: white;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+}
