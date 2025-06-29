@@ -6,7 +6,7 @@
 
 :- use_module(logic/grid/grid_utils).
 :- use_module(logic/grid/grid_gravity, [apply_gravity/3]).
-:- use_module(logic/block_factory, [random_block/2, allowed_range/2]).
+:- use_module(logic/block_factory, [random_block/2, allowed_range/2, max_block/2]).
 
 shoot(Block, Column, Grid, NumCols, Effects) :-
     find_empty_row(Grid, Column, NumCols, RowIndex),
@@ -117,10 +117,6 @@ detect_new_maximum_for_effect(OriginalGrid, NewGrid, NewMax) :-
     ; 
         NewMax = 0
     ).
-
-max_block(Grid, Max) :-
-    include(number, Grid, Numbers),
-    (Numbers == [] -> Max = 0 ; max_list(Numbers, Max)).
 
 build_enhanced_effect_list(OriginalInfo, ComboCount, NewMax, EnhancedInfo) :-
     findall(Effect, (
