@@ -69,29 +69,21 @@ find_and_merge_single_with_effects(Grid, NumCols, ResultGrid, Effects) :-
       Effects = []
     ).
 
-% ==========================================
-% PATRONES L UNIFICADOS (4 funciones → 1)
-% ==========================================
-
 find_l_pattern_direct(Grid, NumRows, NumCols, Row, Col, Value) :-
     between(1, NumRows, Row), Row < NumRows,
     between(1, NumCols, Col),
     get_cell(Grid, Row, Col, NumCols, Value),
     number(Value), Value > 0,
     NextRow is Row + 1,
-    % Patrón 1: ⌊ (abajo-derecha)
     ((Col < NumCols, NextCol is Col + 1,
       get_cell(Grid, NextRow, Col, NumCols, Value),
       get_cell(Grid, NextRow, NextCol, NumCols, Value)) ;
-    % Patrón 2: ⌐ (abajo-izquierda)  
      (Col > 1, PrevCol is Col - 1,
       get_cell(Grid, NextRow, Col, NumCols, Value),
       get_cell(Grid, NextRow, PrevCol, NumCols, Value)) ;
-    % Patrón 3: Γ (derecha-abajo)
      (Col < NumCols, NextCol is Col + 1,
       get_cell(Grid, Row, NextCol, NumCols, Value),
       get_cell(Grid, NextRow, Col, NumCols, Value)) ;
-    % Patrón 4: ⌙ (izquierda-abajo)
      (Col > 1, PrevCol is Col - 1,
       get_cell(Grid, Row, PrevCol, NumCols, Value),
       get_cell(Grid, NextRow, Col, NumCols, Value))).
@@ -99,7 +91,6 @@ find_l_pattern_direct(Grid, NumRows, NumCols, Row, Col, Value) :-
 merge_l_pattern_direct(Grid, Row, Col, Value, NumCols, ResultGrid) :-
     number(Value), MergeValue is Value * 4,
     NextRow is Row + 1,
-    % Detectar y limpiar patrón específico
     ((Col < NumCols, NextCol is Col + 1,
       get_cell(Grid, NextRow, Col, NumCols, Value),
       get_cell(Grid, NextRow, NextCol, NumCols, Value),
@@ -125,10 +116,6 @@ merge_l_pattern_direct(Grid, Row, Col, Value, NumCols, ResultGrid) :-
       set_cell(G1, Row, PrevCol, NumCols, '-', G2),
       set_cell(G2, NextRow, Col, NumCols, '-', G3))),
     set_cell(G3, Row, Col, NumCols, MergeValue, ResultGrid).
-
-% ==========================================
-% LÍNEAS UNIFICADAS (4 funciones → 2)
-% ==========================================
 
 % Unifica trio_in_row y trio_in_col
 find_trio_pattern(Grid, NumRows, NumCols, Row, Col, Value, Direction) :-
@@ -189,10 +176,6 @@ merge_pair_horizontal_targeted(Grid, Row, Col, Value, NumCols, TargetCol, Result
         set_cell(Grid, Row, NextCol, NumCols, Sum, TempGrid),
         set_cell(TempGrid, Row, Col, NumCols, '-', ResultGrid)).
 
-% ==========================================
-% FUNCIONES DE BÚSQUEDA SIMPLIFICADAS
-% ==========================================
-
 find_and_merge_specific_l_pattern_with_effects(Grid, NumCols, ResultGrid, [effect(ResultGrid, [newBlock(Points)])]) :-
     length(Grid, Len), NumRows is Len // NumCols,
     NumRows > 1, NumCols > 1,
@@ -223,10 +206,6 @@ find_and_merge_pair_with_effects_targeted(Grid, NumCols, TargetCol, ResultGrid, 
      merge_pair_horizontal_targeted(Grid, Row, Col, Value, NumCols, TargetCol, ResultGrid), Points is Value * 2;
      find_pair_pattern(Grid, NumRows, NumCols, Row, Col, Value, col),
      merge_pair_pattern(Grid, Row, Col, Value, NumCols, col, ResultGrid), Points is Value * 2), !.
-
-% ==========================================
-% RESTO DEL CÓDIGO (FUNCIONES COMPLEJAS SIN CAMBIO)
-% ==========================================
 
 find_all_simultaneous_merges(Grid, NumCols, SimultaneousMerges) :-
     findall(merge(Type, Positions, Value), find_single_merge(Grid, NumCols, Type, Positions, Value), AllMerges),

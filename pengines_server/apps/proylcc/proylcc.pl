@@ -1,5 +1,5 @@
 :- module(proylcc, 
-    [  
+	[  
         randomBlock/2,
         shoot/5    
     ]).
@@ -56,8 +56,9 @@ apply_retired_blocks_cleanup(OriginalGrid, Effects, NumCols, FinalEffects) :-
                 append(Effects, CleanupEffects, FinalEffects)
             ; 
                 (AddedBlocks \= [] ->
-                    create_range_effects(FinalGrid, AddedBlocks, [], RangeEffects),
-                    append(Effects, RangeEffects, FinalEffects)
+                    % SIMPLIFICADO: create_range_effects era solo esto
+                    findall(effect(FinalGrid, [newBlockAdded(B)]), member(B, AddedBlocks), CleanupEffects),
+                    append(Effects, CleanupEffects, FinalEffects)
                 ;
                     FinalEffects = Effects
                 )
@@ -73,19 +74,10 @@ create_cleanup_effects_with_gravity(CleanedGrid, GravityGrid, AddedBlocks, Remov
         GravityEffect = [effect(GravityGrid, [])],
         findall(effect(GravityGrid, [newBlockAdded(B)]), member(B, AddedBlocks), AddedEffects),
         append(RetiredEffects, GravityEffect, TempEffects),
-        append(TempEffects, AddedEffects, Effects)
-    ;
+        append(TempEffects, AddedEffects, Effects);
         findall(effect(CleanedGrid, [newBlockAdded(B)]), member(B, AddedBlocks), AddedEffects),
         append(RetiredEffects, AddedEffects, Effects)
     ).
-
-create_cleanup_effects(CleanedGrid, AddedBlocks, RemovedBlocks, Effects) :-
-    findall(effect(CleanedGrid, [blockRetired(B)]), member(B, RemovedBlocks), RetiredEffects),
-    findall(effect(CleanedGrid, [newBlockAdded(B)]), member(B, AddedBlocks), AddedEffects),
-    append(RetiredEffects, AddedEffects, Effects).
-
-create_range_effects(Grid, AddedBlocks, [], Effects) :-
-    findall(effect(Grid, [newBlockAdded(B)]), member(B, AddedBlocks), Effects).
 
 % Limpia bloques retirados de la grilla
 clean_retired_blocks(Grid, RetiredBlocks, CleanedGrid) :-
