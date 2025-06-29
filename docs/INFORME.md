@@ -132,6 +132,6 @@ swipl run.pl
 ### Frontend – React
 
 ```bash
-npm run start
+npm start
 
 ```
