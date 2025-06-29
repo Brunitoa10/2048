@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 export interface Notification {
   id: number;
-  type: 'combo' | 'newMaximum' | 'points' | 'blockRetired' | 'newBlockAdded';
+  type: 'combo' | 'newMaximum' | 'points' | 'blockRetired' | 'newBlockAdded' | 'boostExpired';
   message: string;
   value?: number;
 }
@@ -57,6 +57,12 @@ function NotificationSystem({ notifications, onRemove }: NotificationSystemProps
             <>
               <span className="notification-icon">✨</span>
               <span className="notification-text">Nuevo bloque: {notification.value}</span>
+            </>
+          )}
+          {notification.type === 'boostExpired' && (
+            <>
+              <span className="notification-icon">⏰</span>
+              <span className="notification-text">{notification.message}</span>
             </>
           )}
         </div>

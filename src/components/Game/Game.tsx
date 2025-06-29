@@ -28,6 +28,9 @@ function Game() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNextBlock, setShowNextBlock] = useState<boolean>(false);
   
+  const [nextBlockTimer, setNextBlockTimer] = useState<number>(0);
+  const [nextBlockTimerActive, setNextBlockTimerActive] = useState<boolean>(false);
+  
   const [showHints, setShowHints] = useState<boolean>(false);
   const [hints, setHints] = useState<Hint[]>([]);
   const [calculatingHints, setCalculatingHints] = useState<boolean>(false);
@@ -42,6 +45,33 @@ function Game() {
   }, []);
 
   const animateEffect = useEffectAnimator(setGrid, setScore, setWaiting, addNotification);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (nextBlockTimerActive && nextBlockTimer > 0) {
+      interval = setInterval(() => {
+        setNextBlockTimer(prev => {
+          if (prev <= 1) {
+            setShowNextBlock(false);
+            setNextBlockTimerActive(false);
+            addNotification({
+              type: 'boostExpired',
+              message: 'Boost retirado'
+            });
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [nextBlockTimerActive, nextBlockTimer, addNotification]);
 
   useEffect(() => {
     if (!pengine) return;
@@ -99,6 +129,7 @@ function Game() {
     setHints(newHints);
     setCalculatingHints(false);
   }, [pengine, grid, shootBlock, numOfColumns]);
+  
   const analyzeEffects = (column: number, effects: EffectTerm[]): Hint => {
     let totalPoints = 0;
     let hasCombo = false;
@@ -155,7 +186,6 @@ function Game() {
   };
 
   const calculateBlockFromPoints = (points: number): number => {
-    // logica para calcular el bloque resultante
     if (points === 4) return 4;   
     if (points === 8) return 8;   
     if (points === 16) return 16; 
@@ -189,10 +219,17 @@ function Game() {
   };
 
   const toggleNextBlock = () => {
-    setShowNextBlock(!showNextBlock);
+    if (showNextBlock) {
+      setShowNextBlock(false);
+      setNextBlockTimerActive(false);
+      setNextBlockTimer(0);
+    } else {
+      setShowNextBlock(true);
+      setNextBlockTimerActive(true);
+      setNextBlockTimer(10);
+    }
   };
 
-  //funcion para prender/apagar las pistas
   const toggleHints = async () => {
     if (calculatingHints) return; 
     if (showHints) {
@@ -213,6 +250,22 @@ function Game() {
     let classes = 'booster-btn';
     if (showHints) classes += ' active';
     if (waiting || calculatingHints) classes += ' disabled';
+    return classes;
+  };
+
+  const getNextBlockButtonText = () => {
+    if (nextBlockTimerActive && nextBlockTimer > 0) {
+      return `Siguiente (${nextBlockTimer}s)`;
+    }
+    return 'Siguiente';
+  };
+
+  const getNextBlockButtonClasses = () => {
+    let classes = 'booster-btn';
+    if (showNextBlock) classes += ' active';
+    if (nextBlockTimerActive) classes += ' timer-active';
+    if (nextBlockTimerActive && nextBlockTimer <= 3) classes += ' timer-urgent';
+    if (waiting) classes += ' disabled';
     return classes;
   };
 
@@ -239,11 +292,12 @@ function Game() {
         <div className="controls-section">
           <div className="boosters">
             <button 
-              className={`booster-btn ${showNextBlock ? 'active' : ''}`}
+              className={getNextBlockButtonClasses()}
               onClick={toggleNextBlock}
-              title="Mostrar siguiente bloque"
+              disabled={waiting}
+              title="Mostrar siguiente bloque (10 segundos)"
             >
-              Siguiente
+              {getNextBlockButtonText()}
             </button>
             
             <button 
@@ -273,8 +327,10 @@ function Game() {
             
             {showNextBlock && nextBlock && (
               <div className="next-block">
-                <div className="block-label">Siguiente</div>
-                <div className="blockShoot next">
+                <div className={`block-label ${nextBlockTimerActive ? 'timer-active' : ''}`}>
+                  {nextBlockTimerActive ? `Siguiente (${nextBlockTimer}s)` : 'Siguiente'}
+                </div>
+                <div className={`blockShoot next ${nextBlockTimerActive ? 'timer-active' : ''}`}>
                   <Block value={nextBlock} position={[0, 0]} />
                 </div>
               </div>

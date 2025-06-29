@@ -97,10 +97,6 @@ clean_block(Block, InGrid, OutGrid) :-
 replace_retired(Block, Block, '-') :- !.
 replace_retired(_, X, X).
 
-
-
-
-
 count_merge_effects([], 0).
 count_merge_effects([effect(_, EffectInfo)|Rest], Count) :-
     count_merge_effects(Rest, RestCount),
