@@ -10,7 +10,7 @@
 
 - Bruno Ariel Parisi (@brunitoa10)
 - Juan Francisco Picciotti (@Piccio15)
-- Nombre Apellido (usuario GitHub)
+- Lautaro Agustín Ogian (@LautiOg)
 
 ## 1. Introducción
 
