@@ -87,7 +87,7 @@ A continuación se presentan algunos casos representativos con capturas de panta
 
 ### 🟦 Caso 1 – Disparo con combo x3
 
-*(Captura mostrando los bloques fusionándose secuencialmente con mensaje “Combo x3”)*
+![image](https://github.com/user-attachments/assets/0d022544-78bc-4d4e-afeb-5a52dead3fd7)
 
 ### 🟩 Caso 2 – Logro de nuevo bloque máximo
 
@@ -95,11 +95,12 @@ A continuación se presentan algunos casos representativos con capturas de panta
 
 ### 🟨 Caso 3 – Activación del Booster Hint
 
-*(Captura donde se muestran los efectos estimados sobre cada columna)*
+![image](https://github.com/user-attachments/assets/6f50a211-831d-4efb-b928-1d0e45a294b4)
+
 
 ### 🟥 Caso 4 – Activación del Booster siguiente bloque
 
-*(Captura mostrando los dos próximos bloques al mismo tiempo)*
+![image](https://github.com/user-attachments/assets/d844c5f2-d007-46c1-a6d9-8b00095d10c7)
 
 ### 🟫 Caso 5 – Limpieza automática del bloque retirado
 
