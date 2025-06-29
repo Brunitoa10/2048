@@ -9,7 +9,7 @@
 **Integrantes:**
 
 - Bruno Ariel Parisi (@brunitoa10)
-- Nombre Apellido(usuario GitHub)
+- Juan Francisco Picciotti (@Piccio15)
 - Nombre Apellido (usuario GitHub)
 
 ## 1. Introducción
