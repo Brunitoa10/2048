@@ -91,7 +91,9 @@ A continuación se presentan algunos casos representativos con capturas de panta
 
 ### 🟩 Caso 2 – Logro de nuevo bloque máximo
 
-*(Captura con el mensaje “New Block 1024 added”, y otro con “Eliminated Block 4”)*
+![image](https://github.com/user-attachments/assets/ab2744c1-cba2-48c9-8f34-b8b9cd6da39e)
+
+![image](https://github.com/user-attachments/assets/b8ff7b24-4e47-47b2-93ca-6d587436a866)
 
 ### 🟨 Caso 3 – Activación del Booster Hint
 
@@ -102,9 +104,6 @@ A continuación se presentan algunos casos representativos con capturas de panta
 
 ![image](https://github.com/user-attachments/assets/d844c5f2-d007-46c1-a6d9-8b00095d10c7)
 
-### 🟫 Caso 5 – Limpieza automática del bloque retirado
-
-*(Captura antes y después de la limpieza de todos los bloques "4" luego de alcanzar 2048)*
 
 ---
 
